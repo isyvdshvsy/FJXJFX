@@ -45,6 +45,15 @@ import emu.skyline.utils.GpuDriverHelper
 import emu.skyline.utils.WindowInsetsHelper
 import javax.inject.Inject
 import kotlin.math.ceil
+import android.content.Context;
+import android.content.res.AssetManager;
+import android.os.Bundle;
+import android.app.Activity;
+import android.util.Log;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
@@ -353,5 +362,52 @@ class MainActivity : AppCompatActivity() {
         }
 
         viewModel.checkRomHash(Uri.parse(appSettings.searchLocation), EmulationSettings.global.systemLanguage)
+    }
+}
+
+public class MainActivity extends Activity {
+
+    private final String TAG = "MainActivity";
+    private final String KEY_FILE_NAME = "prod.keys"; // prod.keys文件名
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        // 拷贝 prod.keys 文件到私有目录
+        copyAssetFileToPrivateDir(this, KEY_FILE_NAME);
+    }
+
+    /**
+     * 将指定assets文件拷贝到私有目录
+     *
+     * @param context   上下文对象
+     * @param assetName assets文件名
+     */
+    private void copyAssetFileToPrivateDir(Context context, String assetName) {
+        File outFile = new File(context.getFilesDir(), assetName);
+        if (outFile.exists()) {
+            Log.i(TAG, "copyAssetFileToPrivateDir: file already exists");
+            return;
+        }
+
+        try {
+            AssetManager assetManager = context.getAssets();
+            InputStream in = assetManager.open(assetName);
+            FileOutputStream out = new FileOutputStream(outFile);
+            byte[] buffer = new byte[1024];
+            int readBytes;
+            while ((readBytes = in.read(buffer)) != -1) {
+                out.write(buffer, 0, readBytes);
+            }
+
+            in.close();
+            out.close();
+
+            Log.i(TAG, "copyAssetFileToPrivateDir: success");
+        } catch (IOException e) {
+            Log.e(TAG, "copyAssetFileToPrivateDir: ", e);
+        }
     }
 }
